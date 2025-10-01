@@ -1,2 +1,2 @@
 # dorkbrowser
-Download the file and open using chrom(please use desktop site option in mobile devices).
+Download the file and open using chrome(please use desktop site option in mobile devices).
