@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DorkBrowser - Updated</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+        body{background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d);color:#333;min-height:100vh;padding:20px}
+        .container{max-width:1400px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.2);overflow:hidden;min-height:calc(100vh - 40px);display:flex;flex-direction:column}
+        header{background:#fff;padding:20px 30px;border-bottom:1px solid #eaeaea;display:flex;justify-content:space-between;align-items:center}
+        .logo{display:flex;align-items:center;gap:12px}
+        .logo-icon{font-size:32px;background:linear-gradient(135deg,#4285f4,#34a853);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .logo h1{font-size:28px;font-weight:700;background:linear-gradient(135deg,#4285f4,#34a853);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .header-actions{display:flex;gap:10px;align-items:center}
+        .btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px}
+        .btn-primary{background:#4285f4;color:#fff}
+        .btn-outline{background:transparent;border:2px solid #e9ecef;color:#6c757d}
+        .search-section{padding:30px;background:linear-gradient(135deg,#f8f9fa 0%,#e9ecef 100%);border-bottom:1px solid #dee2e6}
+        .search-container{position:relative;max-width:800px;margin:0 auto}
+        .search-box{width:100%;padding:18px 25px;font-size:18px;border:3px solid #e9ecef;border-radius:50px;background:#fff;outline:none}
+        .search-box:focus{border-color:#4285f4}
+        .search-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#4285f4;border:none;border-radius:50%;width:50px;height:50px;color:#fff;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+        .suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border-radius:0 0 20px 20px;box-shadow:0 10px 30px rgba(0,0,0,.15);z-index:1000;max-height:400px;overflow-y:auto;display:none;margin-top:5px;border:2px solid #e9ecef;border-top:none}
+        .suggestion-item{padding:15px 25px;cursor:pointer;border-bottom:1px solid #f8f9fa;display:flex;justify-content:space-between;align-items:center}
+        .suggestion-item:hover{background:#f8f9fa}
+        .syntax{font-size:13px;color:#6c757d;font-family:'Courier New',monospace;background:#f8f9fa;padding:4px 8px;border-radius:4px}
+        .main-content{display:flex;flex:1;min-height:600px}
+        .sidebar{width:320px;background:#f8f9fa;padding:25px;border-right:1px solid #dee2e6;overflow-y:auto}
+        .sidebar-section{margin-bottom:30px}
+        .sidebar h3{color:#4285f4;font-size:18px;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #e9ecef;font-weight:600}
+        .operator-list{list-style:none;padding:0}
+        .operator-item{padding:12px 15px;margin-bottom:8px;background:#fff;border-radius:10px;cursor:pointer;border:1px solid #e9ecef}
+        .operator-item:hover{border-color:#4285f4}
+        .operator-name{font-weight:600;color:#4285f4;margin-bottom:4px}
+        .operator-desc{font-size:13px;color:#6c757d}
+        .history-item{padding:12px 15px;margin-bottom:8px;background:#fff;border-radius:10px;cursor:pointer;border:1px solid #e9ecef;font-size:14px}
+        .content-area{flex:1;display:flex;flex-direction:column}
+        .controls-row{padding:15px 25px;background:#fff;border-bottom:1px solid #dee2e6;display:flex;align-items:center;gap:10px}
+        .url-bar{flex:1;padding:12px 20px;border:2px solid #e9ecef;border-radius:8px;font-size:14px}
+        .url-bar:focus{border-color:#4285f4}
+        .browser-view{flex:1;padding:0;position:relative}
+        .search-message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#6c757d;width:80%}
+        .search-message h2{color:#4285f4;margin-bottom:15px;font-size:28px}
+        .footer{padding:20px;text-align:center;background:#f8f9fa;border-top:1px solid #dee2e6;color:#6c757d;font-size:14px}
+        /* Operator Library "page" (full-screen panel) */
+        .operators-panel{position:fixed;inset:0;background:rgba(10,12,20,.6);display:none;align-items:center;justify-content:center;z-index:2000}
+        .operators-card{width:960px;max-width:95%;background:#fff;border-radius:12px;padding:20px;max-height:85vh;overflow:auto}
+        .operators-card header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+        .operators-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+        .op-card{padding:12px;border-radius:8px;border:1px solid #e9ecef;background:#fbfcfd;display:flex;justify-content:space-between;align-items:center}
+        .op-left{max-width:75%}
+        .op-actions{display:flex;gap:8px}
+        .copy-btn{padding:8px 10px;border-radius:8px;border:none;background:#4285f4;color:#fff;cursor:pointer}
+        .insert-btn{padding:8px 10px;border-radius:8px;border:2px solid #e9ecef;background:transparent;cursor:pointer}
+        .close-btn{padding:8px 12px;border-radius:8px;border:none;background:#e9ecef;cursor:pointer}
+        @media(max-width:700px){.operators-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🔍</div>
+                <h1>DorkBrowser</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" id="openOperatorsBtn">Operator Library</button>
+                <button class="btn btn-primary" id="newTabBtn">➕ New Tab</button>
+            </div>
+        </header>
+
+        <section class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchInput" placeholder="Enter Google dorking command (e.g., site:example.com filetype:pdf)">
+                <button class="search-btn" id="searchBtn">🔍</button>
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+            <div class="search-info" style="text-align:center;margin-top:12px;color:#6c757d;font-size:14px">
+                Type any letter to see dorking operator suggestions. Use operators like <strong>site:</strong>, <strong>filetype:</strong>, <strong>intitle:</strong>
+            </div>
+        </section>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Dorking Operators</h3>
+                    <ul class="operator-list" id="operatorList"></ul>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Search History</h3>
+                    <div id="searchHistory"></div>
+                </div>
+            </aside>
+
+            <main class="content-area">
+                <div class="controls-row">
+                    <input type="text" class="url-bar" id="urlBar" placeholder="Current URL will appear here">
+                    <button class="btn btn-primary" id="goBtn">Go</button>
+                </div>
+
+                <div class="browser-view">
+                    <div class="search-message" id="welcomeMessage">
+                        <h2>Welcome to DorkBrowser</h2>
+                        <p>Start typing in the search bar to use Google Dorking commands</p>
+                        <p>Try operators like: <strong>site:</strong>, <strong>filetype:</strong>, <strong>intitle:</strong></p>
+                        <p>Your searches will open in new tabs for the best experience</p>
+                    </div>
+
+                    <div class="loading" id="loading" style="display:none;text-align:center;padding:40px">
+                        <div class="spinner" style="border:4px solid #f3f3f3;border-top:4px solid #4285f4;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:0 auto 20px"></div>
+                        <p>Loading search results...</p>
+                    </div>
+
+                    <iframe class="webview" id="webview" style="display:none;width:100%;height:100%;border:none;background:#fff"></iframe>
+                </div>
+            </main>
+        </div>
+
+        <footer class="footer">
+            <p>DorkBrowser &copy; 2023 | Advanced Google Dorking Integration</p>
+        </footer>
+    </div>
+
+    <!-- Operator Library Panel (acts as a separate page without adding files) -->
+    <div class="operators-panel" id="operatorsPanel">
+        <div class="operators-card">
+            <header>
+                <h2 style="color:#4285f4">Operator Library</h2>
+                <div>
+                    <button class="close-btn" id="closeOperatorsBtn">Close</button>
+                </div>
+            </header>
+            <div class="operators-grid" id="operatorsGrid"></div>
+            <p style="margin-top:12px;color:#6c757d;font-size:13px">Click <em>Insert</em> to add the operator to the search box, or <em>Copy</em> to copy it to clipboard.</p>
+        </div>
+    </div>
+
+    <script>
+        // Extended Google Dorking operators database (added allintitle / allinurl etc.)
+        const dorkingOperators = [
+            { name: "site", syntax: "site:example.com", description: "Search within a specific site" },
+            { name: "inurl", syntax: "inurl:admin", description: "Find URLs containing specific words" },
+            { name: "intitle", syntax: "intitle:\"index of\"", description: "Find pages with specific words in the title" },
+            { name: "filetype", syntax: "filetype:pdf", description: "Search for specific file types" },
+            { name: "cache", syntax: "cache:example.com", description: "Show cached version of a page" },
+            { name: "link", syntax: "link:example.com", description: "Find pages linking to a specific URL" },
+            { name: "related", syntax: "related:example.com", description: "Find sites related to a specific site" },
+            { name: "info", syntax: "info:example.com", description: "Get information about a page" },
+            { name: "define", syntax: "define:word", description: "Get definition of a word" },
+            { name: "stock", syntax: "stock:AAPL", description: "Get stock information" },
+            { name: "source", syntax: "source:news", description: "Find news from specific sources" },
+            { name: "safesearch", syntax: "safesearch:on", description: "Toggle safe search filter" },
+            { name: "location", syntax: "location:New York", description: "Search for location-specific results" },
+            { name: "daterange", syntax: "daterange:2451910-2451945", description: "Search within a date range" },
+            { name: "phonebook", syntax: "phonebook:John Smith", description: "Search phonebook listings" },
+            // Added operators you requested
+            { name: "allintitle", syntax: "allintitle:security breach", description: "Find pages with all query words in the title" },
+            { name: "allinurl", syntax: "allinurl:admin login", description: "Find URLs that contain all the query words" },
+            // Some more useful ones
+            { name: "allintext", syntax: "allintext:password leaked", description: "Pages that contain all the query words in text" },
+            { name: "ext", syntax: "ext:sql", description: "Alternate to filetype: find files with extension" }
+        ];
+
+        // DOM elements
+        const elements = {
+            searchInput: document.getElementById('searchInput'),
+            suggestions: document.getElementById('suggestions'),
+            operatorList: document.getElementById('operatorList'),
+            searchHistory: document.getElementById('searchHistory'),
+            webview: document.getElementById('webview'),
+            urlBar: document.getElementById('urlBar'),
+            searchBtn: document.getElementById('searchBtn'),
+            goBtn: document.getElementById('goBtn'),
+            newTabBtn: document.getElementById('newTabBtn'),
+            loading: document.getElementById('loading'),
+            welcomeMessage: document.getElementById('welcomeMessage'),
+            openOperatorsBtn: document.getElementById('openOperatorsBtn'),
+            operatorsPanel: document.getElementById('operatorsPanel'),
+            operatorsGrid: document.getElementById('operatorsGrid'),
+            closeOperatorsBtn: document.getElementById('closeOperatorsBtn')
+        };
+
+        let searchHistory = [];
+
+        // Initialize
+        function init(){
+            initializeOperatorList();
+            populateOperatorsPanel();
+            loadSearchHistory();
+            setupEventListeners();
+        }
+
+        // Initialize operator list in sidebar
+        function initializeOperatorList(){
+            elements.operatorList.innerHTML='';
+            dorkingOperators.forEach(operator=>{
+                const li=document.createElement('li');
+                li.className='operator-item';
+                li.innerHTML=`<div class="operator-name">${operator.name}:</div><div class="operator-desc">${operator.description}</div>`;
+                li.addEventListener('click',()=>{
+                    elements.searchInput.value = operator.syntax;
+                    elements.searchInput.focus();
+                    showSuggestions(operator.syntax);
+                });
+                elements.operatorList.appendChild(li);
+            });
+        }
+
+        // Populate operators panel (the "new page")
+        function populateOperatorsPanel(){
+            elements.operatorsGrid.innerHTML='';
+            dorkingOperators.forEach(op=>{
+                const card=document.createElement('div');
+                card.className='op-card';
+                card.innerHTML = `
+                    <div class="op-left">
+                        <div style="font-weight:600;color:#1f6feb">${op.name}</div>
+                        <div style="font-family:'Courier New',monospace;font-size:13px;margin-top:6px">${op.syntax}</div>
+                        <div style="font-size:13px;color:#6c757d;margin-top:6px">${op.description}</div>
+                    </div>
+                    <div class="op-actions">
+                        <button class="copy-btn" data-syntax="${encodeURIComponent(op.syntax)}">Copy</button>
+                        <button class="insert-btn" data-syntax="${encodeURIComponent(op.syntax)}">Insert</button>
+                    </div>
+                `;
+                elements.operatorsGrid.appendChild(card);
+            });
+
+            // attach handlers (delegation)
+            elements.operatorsGrid.querySelectorAll('.copy-btn').forEach(btn=>{
+                btn.addEventListener('click', (e)=>{
+                    const syntax = decodeURIComponent(e.currentTarget.getAttribute('data-syntax'));
+                    navigator.clipboard.writeText(syntax).then(()=>{
+                        btn.textContent='Copied';
+                        setTimeout(()=> btn.textContent='Copy',900);
+                    }).catch(()=> alert('Copy failed'));
+                });
+            });
+            elements.operatorsGrid.querySelectorAll('.insert-btn').forEach(btn=>{
+                btn.addEventListener('click', (e)=>{
+                    const syntax = decodeURIComponent(e.currentTarget.getAttribute('data-syntax'));
+                    // Insert into search box (append if there is text)
+                    const current = elements.searchInput.value.trim();
+                    elements.searchInput.value = current ? (current + ' ' + syntax) : syntax;
+                    elements.operatorsPanel.style.display = 'none';
+                    elements.searchInput.focus();
+                });
+            });
+        }
+
+        // Load history
+        function loadSearchHistory(){
+            const saved = localStorage.getItem('dorkBrowserHistory');
+            searchHistory = saved ? JSON.parse(saved) : [];
+            updateHistoryDisplay();
+        }
+        function updateHistoryDisplay(){
+            elements.searchHistory.innerHTML='';
+            if(searchHistory.length===0){
+                elements.searchHistory.innerHTML='<div style="color:#6c757d;font-style:italic;text-align:center">No search history yet</div>';
+                return;
+            }
+            searchHistory.slice(0,10).forEach(item=>{
+                const div=document.createElement('div');
+                div.className='history-item';
+                div.textContent=item.query;
+                div.addEventListener('click',()=>{
+                    elements.searchInput.value=item.query;performSearch();
+                });
+                elements.searchHistory.appendChild(div);
+            });
+        }
+
+        // Suggestions
+        function showSuggestions(input){
+            const inputValue = input.trim().toLowerCase();
+            elements.suggestions.innerHTML='';
+            if(inputValue===''){ elements.suggestions.style.display='none'; return }
+            const lastSpaceIndex = inputValue.lastIndexOf(' ');
+            const lastInput = lastSpaceIndex !== -1 ? inputValue.substring(lastSpaceIndex + 1) : inputValue;
+            const filtered = dorkingOperators.filter(op => op.name.toLowerCase().startsWith(lastInput) || op.syntax.toLowerCase().includes(lastInput));
+            if(filtered.length>0){
+                filtered.forEach(operator=>{
+                    const item=document.createElement('div');
+                    item.className='suggestion-item';
+                    item.innerHTML=`<div><strong>${operator.name}</strong><div class="syntax">${operator.syntax}</div></div><div>${operator.description}</div>`;
+                    item.addEventListener('click', ()=>{
+                        if(lastSpaceIndex !== -1){
+                            elements.searchInput.value = input.substring(0,lastSpaceIndex+1) + operator.syntax;
+                        } else {
+                            elements.searchInput.value = operator.syntax;
+                        }
+                        elements.searchInput.focus();
+                        elements.suggestions.style.display='none';
+                    });
+                    elements.suggestions.appendChild(item);
+                });
+                elements.suggestions.style.display='block';
+            } else {
+                elements.suggestions.style.display='none';
+            }
+        }
+
+        // Perform search
+        function performSearch(){
+            const query = elements.searchInput.value.trim();
+            if(!query) return;
+            addToHistory(query);
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            elements.urlBar.value = searchUrl;
+            window.open(searchUrl, '_blank');
+            elements.loading.style.display='block';
+            elements.welcomeMessage.style.display='none';
+            elements.webview.style.display='none';
+            setTimeout(()=>{
+                elements.loading.style.display='none';
+                showMessage(`Search opened in new tab: "${query}"`);
+            },900);
+            elements.suggestions.style.display='none';
+        }
+
+        function showMessage(message){
+            elements.welcomeMessage.innerHTML = `<h2>Search Complete</h2><p>${message}</p><p>Your search results have opened in a new browser tab.</p><p>You can continue searching in DorkBrowser while viewing results in the other tab.</p>`;
+            elements.welcomeMessage.style.display='block';
+        }
+
+        function addToHistory(query){
+            searchHistory.unshift({ query: query, timestamp: new Date().toISOString() });
+            if(searchHistory.length>10) searchHistory = searchHistory.slice(0,10);
+            localStorage.setItem('dorkBrowserHistory', JSON.stringify(searchHistory));
+            updateHistoryDisplay();
+        }
+
+        // Event listeners
+        function setupEventListeners(){
+            elements.searchInput.addEventListener('input', (e)=> showSuggestions(e.target.value));
+            elements.searchInput.addEventListener('keydown', (e)=> { if(e.key==='Enter') performSearch(); });
+            elements.searchBtn.addEventListener('click', performSearch);
+            elements.goBtn.addEventListener('click', ()=>{ const url = elements.urlBar.value.trim(); if(url) window.open(url,'_blank'); });
+            elements.newTabBtn.addEventListener('click', ()=>{
+                elements.searchInput.value=''; elements.urlBar.value=''; elements.webview.style.display='none'; elements.loading.style.display='none'; elements.welcomeMessage.style.display='block'; elements.suggestions.style.display='none';
+                elements.welcomeMessage.innerHTML = `<h2>Welcome to DorkBrowser</h2><p>Start typing in the search bar to use Google Dorking commands</p><p>Try operators like: <strong>site:</strong>, <strong>filetype:</strong>, <strong>intitle:</strong></p><p>Your searches will open in new tabs for the best experience</p>`;
+            });
+
+            // Operators panel open/close
+            elements.openOperatorsBtn.addEventListener('click', ()=>{ elements.operatorsPanel.style.display='flex'; });
+            elements.closeOperatorsBtn.addEventListener('click', ()=>{ elements.operatorsPanel.style.display='none'; });
+            document.addEventListener('click', (e)=>{
+                if(!elements.searchInput.contains(e.target) && !elements.suggestions.contains(e.target)){
+                    elements.suggestions.style.display='none';
+                }
+            });
+
+            // Close operators panel on ESC
+            document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ elements.operatorsPanel.style.display='none'; } });
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
